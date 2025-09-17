@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APROX Store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #a970ff;
+            --secondary-color: #31a8e0;
+            --background-color: #0e0e10;
+            --card-background: #1f1f23;
+            --text-color: #ffffff;
+            --text-muted: #adadb8;
+        }
+        body { font-family: Arial, sans-serif; margin: 0; background-color: var(--background-color); color: var(--text-color); padding-bottom: 70px; }
+        .hidden { display: none; }
+        .page { padding: 15px; }
+        .store-title { text-align: center; font-size: 28px; font-weight: bold; color: var(--primary-color); margin-bottom: 20px; }
+        .slider-container { width: 100%; max-width: 100%; height: 200px; overflow: hidden; position: relative; border-radius: 12px; margin-bottom: 30px; background-color: var(--card-background); }
+        .slider { display: flex; height: 100%; transition: transform 0.7s ease-in-out; }
+        .slide { min-width: 100%; height: 100%; position: relative; }
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
+        .slide-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+        .slide-title { font-size: 20px; font-weight: bold; margin-bottom: 8px;}
+
+        /* --- NEW: Banner "Buy Now" Button Style --- */
+        .slide-buy-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .slide-buy-btn:hover {
+            background-color: #9350ff;
+        }
+
+        .category .title { font-size: 22px; font-weight: bold; margin-bottom: 15px; }
+        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .item-card { cursor: pointer; background-color: var(--card-background); border-radius: 8px; overflow: hidden; }
+        .item-card img { width: 100%; height: 120px; object-fit: cover; }
+        .item-card .item-title { padding: 10px; font-size: 14px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .details-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .back-button, .save-item-btn { font-size: 24px; cursor: pointer; }
+        .save-item-btn.active { color: var(--primary-color); }
+        .details-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; }
+        .details-title { font-size: 28px; font-weight: bold; }
+        .details-description { font-size: 16px; color: var(--text-muted); line-height: 1.6; margin-top: 10px; }
+        .action-button { width: 100%; padding: 15px; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; text-align: center; text-decoration: none; display: block; box-sizing: border-box; }
+        #buy-now-btn { background-color: var(--primary-color); }
+        #join-now-btn { background-color: var(--secondary-color); margin-top: 15px; }
+        #search-input { width: 100%; padding: 15px; font-size: 16px; border-radius: 8px; border: none; background-color: var(--card-background); color: white; margin-bottom: 20px; box-sizing: border-box; }
+        .empty-message { text-align: center; color: var(--text-muted); margin-top: 50px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background-color: var(--card-background); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); cursor: pointer; }
+        .nav-item i { font-size: 22px; } .nav-item span { font-size: 12px; }
+        .nav-item.active { color: var(--primary-color); }
+    </style>
+</head>
+<body>
+
+    <div id="home-page" class="page">
+        <h1 class="store-title">APROX Store</h1>
+        <div class="slider-container"><div class="slider" id="hero-slider"></div></div>
+        <div id="categories-container"></div>
+    </div>
+    <div id="search-page" class="page hidden">
+        <input type="text" id="search-input" placeholder="Search for source code...">
+        <div class="item-grid" id="search-results-grid"></div>
+        <div id="search-empty-message" class="empty-message hidden">No results found.</div>
+    </div>
+    <div id="mylist-page" class="page hidden">
+        <h2>My Saved List</h2>
+        <div class="item-grid" id="mylist-grid"></div>
+        <div id="mylist-empty-message" class="empty-message hidden">Your list is empty.</div>
+    </div>
+    <div id="details-page" class="page hidden">
+        <div class="details-header">
+            <i class="fas fa-arrow-left back-button"></i>
+            <i id="save-item-btn" class="far fa-bookmark save-item-btn"></i>
+        </div>
+        <img id="details-img" src="" alt="Product Image" class="details-image">
+        <h1 id="details-title" class="details-title"></h1>
+        <p id="details-desc" class="details-description"></p>
+        <a id="buy-now-btn" class="action-button" href="#" target="_blank">Buy Now</a>
+        <a id="join-now-btn" class="action-button" href="#" target="_blank">Join Now</a>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="home-btn"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="nav-item" id="search-btn"><i class="fas fa-search"></i><span>Search</span></div>
+        <div class="nav-item" id="mylist-btn"><i class="fas fa-bookmark"></i><span>My List</span></div>
+    </nav>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDAT2EaRXqZL0uRxst3YQxdJCV6Pe1k9-s",
+            authDomain: "mystore-3a80c.firebaseapp.com",
+            projectId: "mystore-3a80c",
+            storageBucket: "mystore-3a80c.firebasestorage.app",
+            messagingSenderId: "654531511640",
+            appId: "1:654531511640:web:ee816523f93bcc00b1112d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let allProducts = [];
+            let currentProductId = null;
+            let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
+            let sliderInterval;
+
+            const pages = { home: document.getElementById('home-page'), search: document.getElementById('search-page'), mylist: document.getElementById('mylist-page'), details: document.getElementById('details-page') };
+
+            const createItemCard = (product) => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.dataset.id = product.id;
+                card.innerHTML = `<img src="${product.img}" alt="${product.title}"><div class="item-title">${product.title}</div>`;
+                card.addEventListener('click', () => showDetailsForProduct(product.id));
+                return card;
+            };
+
+            const showPage = (pageKey) => {
+                Object.values(pages).forEach(p => p.classList.add('hidden'));
+                pages[pageKey].classList.remove('hidden');
+                window.scrollTo(0, 0);
+            };
+
+            const showDetailsForProduct = (productId) => {
+                const product = allProducts.find(p => p.id === productId);
+                if (!product) { console.log("Product not found!"); return; }
+                currentProductId = productId;
+                
+                document.getElementById('details-title').textContent = product.title;
+                document.getElementById('details-img').src = product.img;
+                document.getElementById('details-desc').textContent = product.desc;
+                document.getElementById('buy-now-btn').href = `https://t.me/${product.telegramUsername}`;
+                document.getElementById('join-now-btn').href = product.telegramChannel;
+                updateSaveIcon();
+                showPage('details');
+            };
+
+            const updateSaveIcon = () => {
+                const saveBtn = document.getElementById('save-item-btn');
+                if (savedItems.includes(currentProductId)) {
+                    saveBtn.classList.add('active', 'fas');
+                    saveBtn.classList.remove('far');
+                } else {
+                    saveBtn.classList.remove('active', 'fas');
+                    saveBtn.classList.add('far');
+                }
+            };
+
+            const toggleSaveItem = () => {
+                const index = savedItems.indexOf(currentProductId);
+                if (index > -1) savedItems.splice(index, 1);
+                else savedItems.push(currentProductId);
+                localStorage.setItem('savedItems', JSON.stringify(savedItems));
+                updateSaveIcon();
+            };
+            
+            // --- FIREBASE BANNER SLIDER (WITH BUTTON) ---
+            const sliderElement = document.getElementById('hero-slider');
+            db.collection('banners').onSnapshot(snapshot => {
+                if (sliderInterval) clearInterval(sliderInterval);
+                if (snapshot.empty) { sliderElement.innerHTML = ''; return; }
+                
+                // ADDING "Buy Now" BUTTON TO EACH SLIDE
+                sliderElement.innerHTML = snapshot.docs.map(doc => {
+                    const banner = doc.data();
+                    return `<div class="slide" data-code-id="${banner.linkedCodeId || ''}">
+                                <img src="${banner.img}" alt="${banner.title}">
+                                <div class="slide-content">
+                                    <h3 class="slide-title">${banner.title}</h3>
+                                    <button class="slide-buy-btn">Buy Now</button>
+                                </div>
+                            </div>`;
+                }).join('');
+                
+                const slides = sliderElement.children;
+                if (slides.length > 1) {
+                    let currentSlide = 0;
+                    sliderInterval = setInterval(() => {
+                        currentSlide = (currentSlide + 1) % slides.length;
+                        sliderElement.style.transform = `translateX(-${currentSlide * 100}%)`;
+                    }, 3000);
+                }
+            });
+
+            db.collection('codes').orderBy("title").onSnapshot(snapshot => {
+                allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const categories = [...new Set(allProducts.map(p => p.category))].filter(Boolean);
+                const categoriesContainer = document.getElementById('categories-container');
+                categoriesContainer.innerHTML = '';
+                
+                categories.forEach(category => {
+                    const categorySection = document.createElement('div');
+                    categorySection.className = 'category';
+                    categorySection.style.marginTop = '30px';
+                    categorySection.innerHTML = `<h3 class="title">${category}</h3><div class="item-grid"></div>`;
+                    const grid = categorySection.querySelector('.item-grid');
+                    allProducts.filter(p => p.category === category)
+                               .forEach(p => grid.appendChild(createItemCard(p)));
+                    categoriesContainer.appendChild(categorySection);
+                });
+            });
+
+            // --- EVENT LISTENERS (UPDATED FOR SLIDER BUTTON) ---
+            sliderElement.addEventListener('click', (e) => {
+                // Check if the clicked element is the "Buy Now" button
+                if (e.target.classList.contains('slide-buy-btn')) {
+                    const slide = e.target.closest('.slide');
+                    if (slide && slide.dataset.codeId) {
+                        showDetailsForProduct(slide.dataset.codeId);
+                    }
+                }
+            });
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            function setActiveNav(activeBtn) {
+                navItems.forEach(item => item.classList.remove('active'));
+                activeBtn.classList.add('active');
+            }
+            document.getElementById('home-btn').addEventListener('click', () => { showPage('home'); setActiveNav(document.getElementById('home-btn')); });
+            document.getElementById('search-btn').addEventListener('click', () => { showPage('search'); setActiveNav(document.getElementById('search-btn')); });
+            document.getElementById('mylist-btn').addEventListener('click', () => {
+                const mylistGrid = document.getElementById('mylist-grid');
+                mylistGrid.innerHTML = '';
+                const savedProducts = allProducts.filter(p => savedItems.includes(p.id));
+                savedProducts.forEach(p => mylistGrid.appendChild(createItemCard(p)));
+                document.getElementById('mylist-empty-message').classList.toggle('hidden', savedProducts.length === 0);
+                showPage('mylist');
+                setActiveNav(document.getElementById('mylist-btn'));
+            });
+
+            document.getElementById('save-item-btn').addEventListener('click', toggleSaveItem);
+            pages.details.querySelector('.back-button').addEventListener('click', () => showPage('home'));
+            
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const searchResultsGrid = document.getElementById('search-results-grid');
+                searchResultsGrid.innerHTML = '';
+                const results = allProducts.filter(p => p.title.toLowerCase().includes(query) || (p.category && p.category.toLowerCase().includes(query)));
+                results.forEach(p => searchResultsGrid.appendChild(createItemCard(p)));
+                document.getElementById('search-empty-message').classList.toggle('hidden', results.length > 0 || query.length === 0);
+            });
+        });
+    </script>
+</body>
+</html>
